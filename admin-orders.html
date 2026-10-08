@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #d32f2f;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #d32f2f;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f5f5f5;
+}
+
+button {
+    margin: 2px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+</style>
+</head>
+<body>
+
+<h1>Rollin Dough Admin Orders</h1>
+<button onclick="deleteCompletedOrders()">
+    Delete Completed Orders
+</button>
+
+<table>
+    <thead>
+        <tr>
+        <th>ID</th>
+<th>Type</th>
+<th>Customer</th>
+<th>Phone</th>
+<th>Item</th>
+<th>Size/Qty</th>
+<th>Toppings</th>
+<th>Total</th>
+<th>Status</th>
+<th>Actions</th>
+<th>Date</th>
+        </tr>
+    </thead>
+
+    <tbody id="ordersTable"></tbody>
+    
+</table>
+
+<script>
+
+async function loadOrders() {
+
+    try {
+
+        const response = await fetch("/api/orders");
+        const orders = await response.json();
+
+        const table = document.getElementById("ordersTable");
+
+        table.innerHTML = "";
+
+        orders.forEach(order => {
+
+            const row = `
+       <tr>
+    <td>${order.id}</td>
+    <td>${order.orderType || "Pizza"}</td>
+    <td>${order.customerName}</td>
+    <td>${order.phone}</td>
+    <td>${order.pizzaType}</td>
+    <td>${order.size}</td>
+    <td>${order.toppings}</td>
+    <td>$${order.total}</td>
+    <td>${order.status}</td>
+                <td>
+                    <button onclick="updateStatus(${order.id}, 'Preparing')">
+                        Preparing
+                    </button>
+
+                    <button onclick="updateStatus(${order.id}, 'Ready')">
+                        Ready
+                    </button>
+
+                    <button onclick="updateStatus(${order.id}, 'Completed')">
+                        Completed
+                    </button>
+                </td>
+
+                <td>${order.orderDate}</td>
+            </tr>
+            `;
+
+            table.innerHTML += row;
+        });
+
+    } catch (error) {
+        console.error("Failed to load orders:", error);
+    }
+}
+
+async function updateStatus(id, status) {
+
+    try {
+
+        await fetch(`/api/orders/${id}/status`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        });
+
+        loadOrders();
+
+    } catch (error) {
+        console.error("Failed to update status:", error);
+    }
+}
+
+async function deleteCompletedOrders() {
+
+    const confirmed = confirm(
+        "Delete all completed orders?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/orders/completed",
+            {
+                method: "DELETE"
+            }
+        );
+
+        const result = await response.json();
+
+        alert(result.message || "Completed orders deleted.");
+
+        loadOrders();
+
+    } catch (error) {
+        console.error(
+            "Failed to delete completed orders:",
+            error
+        );
+    }
+}
+
+loadOrders();
+
+</script>
